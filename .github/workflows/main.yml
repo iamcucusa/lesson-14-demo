@@ -1,0 +1,52 @@
+name: A workflow for my Hello World file
+on: push
+env:
+  AZURE_WEBAPP_NAME: aleks-test   # set this to your application's name
+  AZURE_WEBAPP_PACKAGE_PATH: '.'      # set this to the path to your web app project, defaults to the repository root
+  NODE_VERSION: '14.x'                # set this to the node version to use
+
+jobs:
+  build:
+    name: Build angular application
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: ./action-a
+        with:
+          MY_NAME: "Aleks"
+
+      # Install Dependencies
+      - name: Install Dependencies
+        run: npm install
+      # Linting
+      - name: Lint Code
+        run: npm run lint
+      # Testing
+      - name: Unit Test
+        run: npm run test
+      # Build
+      - name: Build
+        run: npm run build
+      - uses: actions/upload-artifact@main
+        with:
+          name: webapp
+          path: ./dist/**
+  deploy:
+    name: Deploy to Azure
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download a single artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: webapp
+          path: 
+      - uses: azure/login@v1
+        with:
+            creds: ${{ secrets.AZURE }}
+      - name: 'Deploy to Azure WebApp'
+        uses: azure/webapps-deploy@v2
+        with: 
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
